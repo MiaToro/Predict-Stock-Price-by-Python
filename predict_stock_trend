@@ -1,0 +1,149 @@
+
+#
+# Name: predict stock price by python
+# Description:  predict the stock price trend for current year based on history data
+#               in fact, it is the average percentage increase/decrease from the current price for the last years
+# Author: Mia Jiao
+# Version: 1.1
+# Author Uri: http://itsquirrel.ca
+#
+
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+from Getdata import Getdata
+
+name = 'fb'
+title = 'Facebook'
+
+# name = 'nflx'
+# title = 'Netflex'
+#
+# name = 'hii'
+# title = 'HII'
+
+# name = 'amzn'
+# title = 'Amzon'
+
+# get processed data for the stock
+
+getdata = Getdata(name, title)
+
+data_st = getdata.get_data()
+
+data_tag = data_st[0:1]
+data_cont = data_st[1:]
+data_wid = len(data_tag[0])
+data_sum = len(data_cont)
+data_st_y = int(data_st[1:2][0][0][0:4])
+data_en_y = int(data_st[data_sum - 2: data_sum - 1][0][0][0:4])
+
+print(data_tag, data_st_y, data_en_y)
+
+data_y = {}
+
+# print(type(data_y), data_y)
+
+for i in range(data_st_y, data_en_y + 1):
+    data_y[i] = []
+    for j in range(0, data_wid):
+        data_y[i].append([])
+
+# print(data_y)
+
+for row in data_cont[0:]:
+    temp_1 = int(row[0][0:4])
+    for k in range(0, data_wid):
+        data_y[temp_1][k].append(row[k])
+
+# print(data_y)
+
+data_len = {}
+
+for i in data_y:
+    # print(i, len(data_y[i][0]))
+    data_len[i] = len(data_y[i][0])
+
+# maximum sum of records each year
+data_max = data_len[max(data_len, key=data_len.get)]
+
+for i in data_y:
+    if (data_max > len(data_y[i][0])) & (i != data_en_y):
+        tmp_p_1 = data_max - len(data_y[i][0])
+        # print('i', i, tmp_p_1)
+        tmp_p_2 = []
+        for j in range(0, data_wid):
+            tmp_p_2.append([])
+
+        for k in range(0, tmp_p_1):
+            for l in range(0, data_wid):
+                tmp_p_2[l].append(data_y[i][l][0])
+
+        for m in range(0, data_wid):
+            data_y[i][m] = tmp_p_2[m] + data_y[i][m]
+
+# show in chart
+
+ind = []
+
+for i in range(0, data_max):
+    ind.append(i)
+
+temp_s = min(data_len)
+temp_e = max(data_len)
+
+div_in = data_len[temp_e]
+
+# print('data_y', div_in-1)
+
+data_pro = {}
+
+for i in range(data_st_y, data_en_y + 1):
+    data_pro[i] = []
+    for j in range(0, data_wid):
+        if j == 0:
+            data_pro[i].append(data_y[i][j])
+        else:
+            temp_n_1 = []
+            div_e = data_y[i][j][div_in - 1]
+            temp_n_1 = [(float(x) * 100) / float(div_e) for x in data_y[i][j]]
+            data_pro[i].append(temp_n_1)
+
+# print('data_pro', data_pro)
+
+# prediction
+
+data_pre = {}
+data_pre['prediction'] = []
+
+data_div = len(data_y) - 1
+
+print(data_div)
+
+for j in range(0, data_wid):
+    if j == 0:
+        data_pre['prediction'].append(data_pro[data_en_y - 1][j])
+    else:
+        data_pre['prediction'].append([])
+
+        for l in range(0, data_max):  # data_max
+            tmp_pre_1 = 0
+            tmp_pre_2 = 0
+            for k in range(data_st_y, data_en_y):
+                tmp_pre_1 += data_pro[k][j][l]
+            tmp_pre_2 = tmp_pre_1 / data_div
+            data_pre['prediction'][j].append(tmp_pre_2)
+
+# draw history data line in chart
+for j in data_pro:
+    plt.plot(ind[0:len(data_pro[j][0])], data_pro[j][1], label=j)
+
+# draw prediction line in chart
+plt.plot(ind[0:len(data_pre['prediction'][0])], data_pre['prediction'][1], '-', label='prediction')
+
+plt.plot([0, data_max], [100, 100])  # line
+
+plt.title(getdata.title)
+
+plt.legend(bbox_to_anchor=(1, 0), loc=3, borderaxespad=0.2)
+plt.show()
