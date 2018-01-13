@@ -1,0 +1,42 @@
+# get stock data from the webpage 
+
+class Pickstring:
+
+    def __init__(self, hdtg_raw, tb_cont_raw):
+        self.hdtg_raw = hdtg_raw
+        self.tb_cont_raw = tb_cont_raw
+
+    def pick_headtag(self):
+        str_1 = self.hdtg_raw
+        head_tags = []
+        str_2 = str_1.split("<th>")
+        for i in range(1, len(str_2)):
+            # print(str_2[i])
+            temp_1 = str_2[i]
+            temp_2 = temp_1.split("<")
+            if len(temp_2) == 2:
+                head_tags.append(temp_2[0])
+            else:
+                # print(temp_2[1])
+                temp_3 = temp_2[1].split(">")
+                head_tags.append(temp_3[1].strip())
+        return head_tags
+
+    def pick_tablecontent(self):
+        tb_content = []
+        tb_1 = self.tb_cont_raw
+        tb_conts = []
+
+        tb_2 = tb_1.split("<tr>")[1:]
+        tb_2[len(tb_2) - 1] = tb_2[len(tb_2) - 1].split("</tr>")[0]
+
+        for i in range(0, len(tb_2)):
+            # print(i, '  ', tb_2[i])
+            temp_1 = tb_2[i].split()
+            temp_2 = []
+            for j in range(1, len(temp_1), 3):
+                # print(j, '  ', temp_2)
+                temp_2.append(temp_1[j].replace(',', ''))
+            tb_conts.append(temp_2) 
+
+        return tb_conts
