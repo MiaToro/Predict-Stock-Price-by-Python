@@ -1,0 +1,117 @@
+# collect history data about the stock
+
+from lxml import html
+import requests
+from Pickstring import Pickstring  # retrieve data from webpage content
+import csv
+
+class Getdata: 
+    title = ''
+
+    def __init__(self, name, title):
+        # self.url = url
+        # self.file_p = file_p
+        # self.file_p_n = file_p_n
+        self.url = 'http://www.nasdaq.com/symbol/' + name + '/historical'
+        self.file_p = '/' + name + 'hisquotes.csv'
+        self.file_p_n = '/His' + name + '.csv'
+        self.title = title
+
+    def get_data(self):
+        data = []
+        url = self.url
+        file_p = self.file_p
+        file_p_n = self.file_p_n
+
+        page = requests.get(url)
+        page_txt = page.text
+
+        # print(page_txt)
+
+        page_slt_1 = page_txt.split("quotes-left-content")
+
+        page_slt_2 = page_slt_1[1].split("thead")
+
+        pickstring = Pickstring(page_slt_2[1], page_slt_2[2])
+
+        headtag = pickstring.pick_headtag()
+        tb_conts = pickstring.pick_tablecontent()
+
+        # write into a file
+
+        with open(file_p, 'rt') as f:
+            reader = csv.reader(f)
+            list_one = list(reader)
+
+        # print(list_one)
+
+        # merge list_one and tb_conts to tb_conts_m
+
+        tb_conts_m = []
+
+        # old records, order
+        # by order 'date', 'close', 'volume', 'open', 'high', 'low'
+        data_headtag = list_one[0:1]
+        # print(data_headtag)
+        tmp_m_1 = list_one[2:]
+
+        # new record, just get from webpage
+        # by order:  'Date', 'Open', 'High', 'Low', 'Close / Last', 'Volume'
+        tmp_m_2 = tb_conts[1:]
+
+        # print(tmp_m_1)
+        # print(tmp_m_2)
+
+        # get the lastest date from old record
+        tmp_n_date = tmp_m_1[0][0]
+        tmp_n_y = tmp_n_date[0:4]
+        tmp_n_m = tmp_n_date[5:7]
+        tmp_n_d = tmp_n_date[8:10]
+
+        tmp_ind = 0
+
+        tmp_n_n = []  # for new records
+
+        # print(tmp_n_date, tmp_n_date[0:4], tmp_n_date[5:7], tmp_n_date[8:10])
+
+        for i in range(0, len(tmp_m_2)):
+            tmp_date = tmp_m_2[i][0]
+            # print(tmp_date[0:2], tmp_date[3:5], tmp_date[6:10]) # m, d, y
+            tmp_y = tmp_date[6:10]
+            tmp_d = tmp_date[3:5]
+            tmp_m = tmp_date[0:2]
+            # print(tmp_n_y, tmp_n_m, tmp_n_d)  # m, d, y
+            # print(tmp_y, tmp_m, tmp_d)  # m, d, y
+            if (tmp_y == tmp_n_y) & (tmp_m == tmp_n_m) & (tmp_d == tmp_n_d):
+                tmp_ind = i
+                # print('index = ', i)
+                # print("tmp_", tmp_m_2[tmp_ind])
+                break
+            # new record, just get from webpage
+            # by order:  'Date', 'Open', 'High', 'Low', 'Close / Last', 'Volume'
+            # old records, order
+            # by order 'date(y/m/d)', 'close', 'volume', 'open', 'high', 'low'
+            # here add new records to tmp_n_n by the column order of old records
+            tmp_n_n.append(
+                [tmp_y + '/' + tmp_m + '/' + tmp_d, tmp_m_2[i][4], tmp_m_2[i][5], tmp_m_2[i][1], tmp_m_2[i][2],
+                 tmp_m_2[i][3]])
+
+        # new records
+        tb_conts_m = tmp_n_n + tmp_m_1
+
+        with open(file_p_n, 'w') as f:
+            writer = csv.writer(f)
+            for i in range(0, len(tb_conts_m)):
+                for j in range(0, len(tb_conts_m[i])):
+                    if j == (len(tb_conts_m[i]) - 1):
+                        f.write(tb_conts_m[i][j] + '\r\n')
+                    else:
+                        f.write(tb_conts_m[i][j] + ' ')
+
+        with open(file_p_n, 'rt') as f:
+            reader = csv.reader(f, delimiter=' ')
+            list_two = list(reader)
+
+        list_two.reverse()
+
+        return data_headtag + list_two
